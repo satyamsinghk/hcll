@@ -5,11 +5,9 @@ process.env.NODE_ENV = process.env.NODE_ENV || 'development';
 
 const envFound = dotenv.config();
 if (envFound.error) {
-  // This error should crash whole process in production
-  if (process.env.NODE_ENV === 'production') {
-     throw new Error("⚠️  Couldn't find .env file  ⚠️");
-  } else {
-    console.log("⚠️  .env file not found, using defaults  ⚠️");
+  // In production, env vars are injected directly, so no .env file is needed.
+  if (process.env.NODE_ENV !== 'production') {
+     console.log("⚠️  .env file not found  ⚠️");
   }
 }
 
