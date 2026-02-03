@@ -1,5 +1,7 @@
 const crypto = require('crypto');
 const User = require('../models/user');
+const Student = require('../models/student');
+const Hostel = require('../models/hostel');
 const argon2 = require('argon2');
 const jwt = require('jsonwebtoken');
 const config = require('../config');
@@ -25,9 +27,37 @@ module.exports = class AuthService {
 
       const user = userRecord.toObject();
       Reflect.deleteProperty(user, 'password');
+
+      // [NEW] If role is STUDENT, create a Student profile automatically
+      if (user.role === 'STUDENT' || user.role === 'student') {
+        // Fetch default Hostel
+        const hostel = await Hostel.findOne(); 
+        
+        await Student.create({
+            firstName: user.name.split(' ')[0] || user.name,
+            lastName: user.name.split(' ').slice(1).join(' ') || '.',
+            email: user.email,
+            rollNumber: 'TEMP-' + Date.now().toString().slice(-6), // Temporary Roll No
+            phone: '0000000000', // Placeholder
+            hostelId: hostel ? hostel._id : null,
+            // Ensure userId is linked if schema supports it, strictly Student model doesn't have it explicitly shown in previous `view_file` 
+            // but relying on email match for now or we should add userId reference to Student model.
+            // Wait, previous `view_file` of Student model didn't show `userId`. 
+            // The Admin Dashboard joins on WHAT? 
+            // Ah, Admin Dashboard joins purely on `Student` collection. 
+            // It doesn't seem to join regular `User` at all!
+            // Wait, if `User` and `Student` are separate, how are they linked? 
+            // Email is the common key.
+        });
+      }
       
       return { user, token };
     } catch (e) {
+      if (e.code === 11000) {
+        const error = new Error('Email or Username already exists');
+        error.status = 409;
+        throw error;
+      }
       throw e;
     }
   }

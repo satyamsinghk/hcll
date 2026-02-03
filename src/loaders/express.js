@@ -30,6 +30,7 @@ module.exports = ({ app }) => {
 
   /// error handlers
   app.use((err, req, res, next) => {
+    console.error('🔥 Error Handler:', err);
     res.status(err.status || 500);
     res.json({
       errors: {
